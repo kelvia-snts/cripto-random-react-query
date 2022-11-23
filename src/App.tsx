@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import "./App.css";
 
 const getRandomNumberFromApi = async (): Promise<number> => {
@@ -7,19 +7,38 @@ const getRandomNumberFromApi = async (): Promise<number> => {
   );
   const numberString = await res.text();
 
+  // throw new Error("Erro ao carregar!");
   return +numberString;
 };
 
 export const App = () => {
   const [number, setNumber] = useState<number>();
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>();
+  const [key, forceRefetch] = useReducer((x) => x + 1, 0);
 
   useEffect(() => {
-    getRandomNumberFromApi().then((num) => setNumber(num));
-  }, []);
+    setIsLoading(true);
+    getRandomNumberFromApi()
+      .then(setNumber)
+      .catch((error) => setError(error.message));
+  }, [key]);
+
+  useEffect(() => {
+    if (number) setIsLoading(false);
+  }, [number]);
+
+  useEffect(() => {
+    if (error) setIsLoading(false);
+  }, [error]);
 
   return (
     <div className="App App-header">
-      <h2>Número Aleatório: {number}</h2>
+      {isLoading ? <h2>Carregando...</h2> : <h2>Número Aleatório: {number}</h2>}
+      {!isLoading && error && <h3>{error}</h3>}
+      <button onClick={forceRefetch} disabled={isLoading}>
+        {isLoading ? "..." : "Novo Número"}
+      </button>
     </div>
   );
 };
